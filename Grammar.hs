@@ -20,13 +20,15 @@ getProdName _ = ""
 
 -- The Language --
 
-prods = [stmt, stmt1, var, var1, var2, num]
-stmt = Prod "if" [Term "if", NonTerm "cond", Term "then", NonTerm "stmt", Term "else", NonTerm "stmt"]
-stmt1 = Prod "assign" [NonTerm "var", Term "->", NonTerm "num"] 
+prods = [stmt, stmt1, var, var1, var2, num, cond, cond1]
+stmt = Prod "stmt" [Term "if", NonTerm "cond", Term "then", NonTerm "stmt", Term "else", NonTerm "stmt"]
+stmt1 = Prod "stmt" [NonTerm "var", Term "->", NonTerm "num"] 
 var = Prod "var" [Term "x"]
 var1 = Prod "var" [Term "y"]
 var2 = Prod "var" [Eps]
 num = Prod "num" [Term "1"]
+cond = Prod "cond" [Term "TRUE"]
+cond1 = Prod "cond" [Term "FALSE"]
 
 main :: IO()
 main = do print (nullable prods stmt)
@@ -41,8 +43,7 @@ resolve _ _ = []
 nullable :: [Node] -> Node -> Bool
 nullable _ Eps = True
 nullable _ (Term _) = False
-nullable t n@(NonTerm x) = foldr (||) False (map (nullable t) ps)
-    where ps = resolve t n
+nullable t n@(NonTerm x) = let ps = (resolve t n) in foldr (||) False (map (nullable t) ps)
 nullable t p@(Prod x (n:ns)) = nullable t n
 
 -- first set of list of symbols --
@@ -55,8 +56,7 @@ first' t [] = ["eps"]
 first :: [Node] -> Node -> [String]
 first _ Eps = ["eps"]
 first _ (Term x) = [x]
-first t n@(NonTerm x) = foldr (union) [] (map (first t) ps)
-    where ps = resolve t n
+first t n@(NonTerm x) = let ps = (resolve t n) in foldr (union) [] (map (first t) ps)
 first t p@(Prod x c@(n:ns)) | nullable t p = (first' t c) 
                             | otherwise = first t n
 
