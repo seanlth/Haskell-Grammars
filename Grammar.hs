@@ -9,20 +9,30 @@ data Node = Term String | Eps | NonTerm String | Prod String [Node]
 instance Show Node where 
     show (Term x) = x
     show (Eps) = "eps"
-    show (NonTerm x) = x
-    show (Prod x ns) = x ++ ", [" ++ foldr (++) "" ((map (show) ns)) ++ "]"
+    show (NonTerm x) = "<"++ x ++">"
+    show (Prod x ns) = x ++ ", [ " ++ foldr (\x y -> x++" "++y) "" ((map (show) ns)) ++ "]"
 
+instance Eq Node where
+    n1 == n2 = (getNodeValue n1) == (getNodeValue n2)
 
 getProdName :: Node -> String
 getProdName (Prod name _) = name
 getProdName _ = ""
 
+getProdNodes :: Node -> [Node]
+getProdNodes (Prod _ ns) = ns
+getProdNodes _ = []
+
+getNodeValue :: Node -> (Int, String)
+getNodeValue (Eps) = (0, "eps")
+getNodeValue (Term x) = (1, x)
+getNodeValue (NonTerm x) = (2, x)
+getNodeValue (Prod x ns) = (2, x)
 
 -- The Language --
-
 prods = [stmt, stmt1, var, var1, var2, num, cond, cond1]
 stmt = Prod "stmt" [Term "if", NonTerm "cond", Term "then", NonTerm "stmt", Term "else", NonTerm "stmt"]
-stmt1 = Prod "stmt" [NonTerm "var", Term "->", NonTerm "num"] 
+stmt1 = Prod "stmt" [NonTerm "var", Term "=", NonTerm "num"] 
 var = Prod "var" [Term "x"]
 var1 = Prod "var" [Term "y"]
 var2 = Prod "var" [Eps]
@@ -59,4 +69,16 @@ first _ (Term x) = [x]
 first t n@(NonTerm x) = let ps = (resolve t n) in foldr (union) [] (map (first t) ps)
 first t p@(Prod x c@(n:ns)) | nullable t p = (first' t c) 
                             | otherwise = first t n
+
+followFor :: [Node] -> Node -> Node -> [String]
+followFor t n p@(Prod m (n1:[])) | n == n1 && n /= p = follow t p
+                                 | otherwise = []
+followFor t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (first t n2) (followFor t n (Prod m (n2:ns)))
+                                    | n == n1 && nullable t n2 = union ((first t n2) \\ ["eps"]) (followFor t n (Prod m (n2:ns)))
+                                    | otherwise = followFor t n (Prod m (n2:ns))
+
+
+follow :: [Node] -> Node -> [String]
+follow t@(p:ps) n = foldr (union) [] (map ((followFor t) n) t) 
+follow _ _ = []
 
