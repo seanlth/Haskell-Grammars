@@ -56,13 +56,13 @@ nullable _ (Term _) = False
 nullable t n@(NonTerm x) = let ps = (resolve t n) in foldr (||) False (map (nullable t) ps)
 nullable t p@(Prod x (n:ns)) = nullable t n
 
--- first set of list of symbols --
+-- First set of list of symbols --
 first' :: [Node] -> [Node] -> [String]
 first' t (n:ns) | nullable t n = union (first t n \\ ["eps"]) (first' t ns)
                 | otherwise = first t n
 first' t [] = ["eps"]
 
--- first set of symbol --
+-- First set of symbol --
 first :: [Node] -> Node -> [String]
 first _ Eps = ["eps"]
 first _ (Term x) = [x]
@@ -70,15 +70,17 @@ first t n@(NonTerm x) = let ps = (resolve t n) in foldr (union) [] (map (first t
 first t p@(Prod x c@(n:ns)) | nullable t p = (first' t c) 
                             | otherwise = first t n
 
-followFor :: [Node] -> Node -> Node -> [String]
-followFor t n p@(Prod m (n1:[])) | n == n1 && n /= p = follow t p
-                                 | otherwise = []
-followFor t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (first t n2) (followFor t n (Prod m (n2:ns)))
-                                    | n == n1 && nullable t n2 = union ((first t n2) \\ ["eps"]) (followFor t n (Prod m (n2:ns)))
-                                    | otherwise = followFor t n (Prod m (n2:ns))
 
+-- Follow set for production --
+follow' :: [Node] -> Node -> Node -> [String]
+follow' t n p@(Prod m (n1:[])) | n == n1 && n /= p = follow t p
+                               | otherwise = []
+follow' t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (first t n2) (follow' t n (Prod m (n2:ns)))
+                                  | n == n1 && nullable t n2 = union ((first t n2) \\ ["eps"]) (follow' t n (Prod m (n2:ns)))
+                                  | otherwise = follow' t n (Prod m (n2:ns))
 
+-- Follow set across all productions -- 
 follow :: [Node] -> Node -> [String]
-follow t@(p:ps) n = foldr (union) [] (map ((followFor t) n) t) 
+follow t@(p:ps) n = foldr (union) [] (map ((follow' t) n) t) 
 follow _ _ = []
 
