@@ -87,10 +87,3 @@ select t p@(Prod m ns) | nullable t p = union (first t p) (follow t p)
 select _ _ = error "not a production"
 
 
-parse :: [Node] -> [Node] -> [String] -> Bool 
-parse t s exp | 
-
-
-
-
-
