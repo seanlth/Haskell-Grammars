@@ -19,10 +19,6 @@ getProdName :: Node -> String
 getProdName (Prod name _) = name
 getProdName _ = ""
 
-getProdNodes :: Node -> [Node]
-getProdNodes (Prod _ ns) = ns
-getProdNodes _ = []
-
 getNodeValue :: Node -> (Int, String)
 getNodeValue (Eps) = (0, "eps")
 getNodeValue (Term x) = (1, x)
@@ -30,12 +26,12 @@ getNodeValue (NonTerm x) = (2, x)
 getNodeValue (Prod x ns) = (2, x)
 
 -- The Language --
-prods = [stmt, stmt1, var, var1, var2, num, cond, cond1]
+prods = [stmts, stmt, stmt1, var, var1, num, cond, cond1]
 stmt = Prod "stmt" [Term "if", NonTerm "cond", Term "then", NonTerm "stmt", Term "else", NonTerm "stmt"]
-stmt1 = Prod "stmt" [NonTerm "var", Term "=", NonTerm "num"] 
+stmt1 = Prod "stmt" [NonTerm "var", Term "=", NonTerm "num"]
+stmts = Prod "stmts" [NonTerm "stmt", Term ";", NonTerm "stmt"]
 var = Prod "var" [Term "x"]
 var1 = Prod "var" [Term "y"]
-var2 = Prod "var" [Eps]
 num = Prod "num" [Term "1"]
 cond = Prod "cond" [Term "TRUE"]
 cond1 = Prod "cond" [Term "FALSE"]
@@ -83,4 +79,18 @@ follow' t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (fi
 follow :: [Node] -> Node -> [String]
 follow t@(p:ps) n = foldr (union) [] (map ((follow' t) n) t) 
 follow _ _ = []
+
+
+select :: [Node] -> Node -> [String]
+select t p@(Prod m ns) | nullable t p = union (first t p) (follow t p)
+                       | otherwise = first t p
+select _ _ = error "not a production"
+
+
+parse :: [Node] -> [Node] -> [String] -> Bool 
+parse t s exp | 
+
+
+
+
 
