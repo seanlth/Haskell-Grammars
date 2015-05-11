@@ -26,20 +26,18 @@ getNodeValue (NonTerm x) = (2, x)
 getNodeValue (Prod x ns) = (2, x)
 
 -- The Language --
-prods = [top, stmt, stmt1, var, var1, var2, num, cond, cond1]
-top = Prod "s" [NonTerm "stmt"]
-stmt = Prod "stmt" [Term "if", NonTerm "cond", Term "then", NonTerm "stmt", Term "else", NonTerm "stmt"]
-stmt1 = Prod "stmt" [NonTerm "var", Term "=", NonTerm "num"]
-stmts = Prod "stmts" [NonTerm "stmt", Term ";", NonTerm "stmt"]
-var = Prod "var" [Term "x"]
-var1 = Prod "var" [Term "y"]
-var2 = Prod "var" [Eps]
-num = Prod "num" [Term "1"]
-cond = Prod "cond" [Term "TRUE"]
-cond1 = Prod "cond" [Term "FALSE"]
+prods = [e, e_list, e_list1, t, t_list, t_list1, p, p1]
+e = Prod "E" [NonTerm "T", NonTerm "E_list"]
+e_list = Prod "E_list" [Term "+", NonTerm "T", NonTerm "E_list"]
+e_list1 = Prod "E_list" [Eps]
+t = Prod "T" [NonTerm "P", NonTerm "T_list"]
+t_list = Prod "T_list" [Term "*", NonTerm "P", NonTerm "T_list"]
+t_list1 = Prod "T_list" [Eps]
+p = Prod "P" [Term "(", NonTerm "E", Term ")"]
+p1 = Prod "P" [Term "1"]
 
 main :: IO()
-main = do print (nullable prods stmt)
+main = do print (follow prods t)
 
 -- Get nonterminal productions --
 resolve :: [Node] -> Node -> [Node]
@@ -57,6 +55,7 @@ nullable _ Eps = True
 nullable _ (Term _) = False
 nullable t n@(NonTerm x) = let ps = (resolve t n) in foldr (||) False (map (nullable t) ps)
 nullable t p@(Prod x (ns)) = foldr (&&) True (map (nullable t) ns)
+
 
 -- First set of list of symbols --
 first' :: [Node] -> [Node] -> [String]
@@ -77,7 +76,7 @@ follow' :: [Node] -> Node -> Node -> [String]
 follow' t n p@(Prod m (n1:[])) | n == n1 && n /= p = follow t p
                                | otherwise = []
 follow' t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (first t n2) (follow' t n (Prod m (n2:ns)))
-                                  | n == n1 && nullable t n2 = union ((first t n2) \\ ["eps"]) (follow' t n (Prod m (n2:ns)))
+                                  | n == n1 && nullable t n2 = union ( union ((first t n2) \\ ["eps"]) (follow t n2) ) (follow' t n (Prod m (n2:ns)))
                                   | otherwise = follow' t n (Prod m (n2:ns))
 
 -- Follow set across all productions -- 
