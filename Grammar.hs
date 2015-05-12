@@ -27,7 +27,7 @@ getNodeValue (Prod x ns) = (2, x)
 
 -- The Language --
 prods = [e, e_list, e_list1, t, t_list, t_list1, p, p1]
-e = Prod "E" [NonTerm "T", NonTerm "E_list"]
+e = Prod "E" [NonTerm "T", NonTerm "E_list", Term "&1"]
 e_list = Prod "E_list" [Term "+", NonTerm "T", NonTerm "E_list"]
 e_list1 = Prod "E_list" [Eps]
 t = Prod "T" [NonTerm "P", NonTerm "T_list"]
@@ -75,8 +75,10 @@ first t p@(Prod x c@(n:ns)) = (first' t c)
 follow' :: [Node] -> Node -> Node -> [String]
 follow' t n p@(Prod m (n1:[])) | n == n1 && n /= p = follow t p
                                | otherwise = []
+follow' t n p@(Prod m (n1:n2:[])) | n == n1 && (not (nullable t n2)) = first t n2
+follow' t n p@(Prod m (n1:n2:[])) | n == n1 && (nullable t n2) = union (first t n2 \\ ["eps"]) (follow t n2) 
 follow' t n p@(Prod m (n1:n2:ns)) | n == n1 && (not (nullable t n2)) = union (first t n2) (follow' t n (Prod m (n2:ns)))
-                                  | n == n1 && nullable t n2 = union ( union ((first t n2) \\ ["eps"]) (follow t n2) ) (follow' t n (Prod m (n2:ns)))
+                                  | n == n1 && nullable t n2 = union ( union ((first t n2) \\ ["eps"]) (follow [p] n2) ) (follow' t n (Prod m (n2:ns)))
                                   | otherwise = follow' t n (Prod m (n2:ns))
 
 -- Follow set across all productions -- 
